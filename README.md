@@ -57,3 +57,20 @@ Run docker swarm stack command:
 ```
 
 
+## Service Access Reference
+
+#### visualizer items
+
+```http
+   https://visualizer.domain.com/
+```
+#### Account-manager heartbeat
+
+```http
+   https://account-manager.domain.com/accountico/heartbeat
+```
+#### Auth heartbeat
+
+```http
+   https://auth.domain.com/authentiq/v1/heartbeat
+```
