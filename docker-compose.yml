@@ -1,0 +1,92 @@
+version: "3"
+
+networks:
+  mynet: {}
+
+
+volumes:
+  mongodb_data: {}
+
+services:
+  traefik:
+    image: "traefik:v2.2"
+    ports:
+      - "80:80"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "$PWD/traefik/traefik.yml:/traefik.yml"
+      - "$PWD/traefik/traefik_dynamic.yml:/traefik_dynamic.yml"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]   
+    
+         
+
+  auth:
+    build: ./auth
+    #image: auth/node:1.5
+    image: sajjadjfaribojd1/jabj:auth1.5
+    env_file: auth/.env
+    labels:
+      - traefik.http.routers.auth.rule=Host(`auth.bestconfig.ir`)
+      - traefik.port=2000
+    networks:
+      - mynet
+    depends_on:
+      - mongodb
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  account-manager:
+    build: ./account-manager
+    #image: account-manager/node:1.5
+    image: sajjadjfaribojd1/jabj:node1.5
+    env_file: account-manager/.env
+    labels:
+      - traefik.http.routers.account-manager.rule=Host(`account-manager.bestconfig.ir`)
+      - traefik.port=5000
+    depends_on:
+      - mongodb
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+
+  mongodb:
+    image: mongo:3.6.8
+    volumes:
+      - mongodb_data:/data/db
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]   
+      
+
+    labels:
+      - traefik.enable=false
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    ports:
+      - 8080
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+    labels:
+      - traefik.http.routers.visualizer.rule=Host(`visualizer.bestconfig.ir`)
+      - traefik.port=8080
