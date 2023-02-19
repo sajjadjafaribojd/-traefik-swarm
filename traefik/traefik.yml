@@ -5,8 +5,8 @@ api:
   dashboard: true
 providers:
   docker:
-    swarmMode: true
-    swarmModeRefreshSeconds: 30
+    #swarmMode: true
+    #swarmModeRefreshSeconds: 30
     watch: true
   file:
     filename: traefik_dynamic.yml
