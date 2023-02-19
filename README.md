@@ -62,7 +62,7 @@ Run docker swarm stack command:
 #### Traefik Dashboard
 
 ```http
-   https://monitor.bestconfig.ir/dashboard/
+   https://monitor.domain.com/dashboard/
 ```
 
 #### visualizer items
