@@ -1,1 +1,1 @@
-# -traefik-swarm
+# traefik-swarm
