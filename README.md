@@ -59,6 +59,12 @@ Run docker swarm stack command:
 
 ## Service Access Reference
 
+#### Traefik Dashboard
+
+```http
+   https://monitor.bestconfig.ir/dashboard/
+```
+
 #### visualizer items
 
 ```http
