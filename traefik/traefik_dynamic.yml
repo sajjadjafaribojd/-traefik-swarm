@@ -1,0 +1,15 @@
+http:
+  middlewares:
+    simpleAuth:
+      basicAuth:
+        users:
+          - 'admin:$apr1$.sqRVNMJ$rigDZjiNu6HEb54K3qquG/'
+  routers:
+    api:
+      rule: Host(`monitor.bestconfig.ir`)
+      entrypoints:
+        - web 
+      middlewares:
+        - simpleAuth
+      service: api@internal
+
