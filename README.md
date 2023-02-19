@@ -22,7 +22,7 @@ Use traefik reverse proxy with docker swarm for scale application container.
 
 ## Infrastructure
 
-![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
+![App Screenshot](https://github.com/sajjadjafaribojd/-traefik-swarm/blob/master/asset/Infrastructure.PNG)
 
 
 ## Run Locally
