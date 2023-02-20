@@ -1,38 +1,67 @@
 version: "3"
 
 networks:
-  mynet: {}
-
+  mynet:
+    external: true
+  
 
 volumes:
   mongodb_data: {}
 
 services:
-  traefik:
+  mytraefik:
     image: "traefik:v2.2"
+    command:
+      # Enable Docker in Traefik, so that it reads labels from Docker services
+      - --providers.docker
+      # Do not expose all Docker services, only the ones explicitly exposed
+      - --providers.docker.exposedbydefault=false
+      # Enable Docker Swarm mode
+      - --providers.docker.swarmmode
+      # Create an entrypoint "http" listening on port 80
+      - --entrypoints.http.address=:80
+      # Enable the access log, with HTTP requests
+      - --accesslog
+      # Enable the Traefik log, for configurations and errors
+      - --log
+      # Enable the Dashboard and API
+      - --api
+      - --providers.docker.network=mynet
     ports:
       - "80:80"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "$PWD/traefik/traefik.yml:/traefik.yml"
-      - "$PWD/traefik/traefik_dynamic.yml:/traefik_dynamic.yml"
+    networks:
+      - mynet  
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
       placement:
-        constraints: [node.role == manager]   
+        constraints: [node.role == manager]
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the mynet network (declared below)
+        - traefik.docker.network=mynet
+        # admin-auth middleware with HTTP Basic auth
+        # Using the environment variables USERNAME and HASHED_PASSWORD
+        #- traefik.http.middlewares.admin-auth.basicauth.users=admin:123
+        # traefik-http set up only to use the middleware to redirect to https
+        # Uses the environment variable DOMAIN
+        - traefik.http.routers.mytraefik.rule=Host(`monitor.bestconfig.ir`)
+        - traefik.http.routers.mytraefik.entrypoints=http
+        # Uses the environment variable DOMAIN
+        # Define the port inside of the Docker service to use
+        - traefik.http.services.mytraefik.loadbalancer.server.port=80
+        # Use the special Traefik service api@internal with the web UI/Dashboard
+        - traefik.http.routers.mytraefik.service=api@internal     
     
-         
-
   auth:
     build: ./auth
     #image: auth/node:1.5
     image: sajjadjfaribojd1/jabj:auth1.5
-    env_file: auth/.env
-    labels:
-      - traefik.http.routers.auth.rule=Host(`auth.bestconfig.ir`)
-      - traefik.port=2000
+    env_file: auth/.env 
     networks:
       - mynet
     depends_on:
@@ -44,15 +73,20 @@ services:
         delay: 10s
       restart_policy:
         condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.auth.rule=Host(`auth.bestconfig.ir`)
+        - traefik.http.routers.auth.entrypoints=http
+        - traefik.http.services.auth.loadbalancer.server.port=2000 
+        - traefik.port=2000
 
   account-manager:
     build: ./account-manager
     #image: account-manager/node:1.5
     image: sajjadjfaribojd1/jabj:node1.5
     env_file: account-manager/.env
-    labels:
-      - traefik.http.routers.account-manager.rule=Host(`account-manager.bestconfig.ir`)
-      - traefik.port=5000
+    networks:
+      - mynet
     depends_on:
       - mongodb
     deploy:
@@ -62,19 +96,25 @@ services:
         delay: 10s
       restart_policy:
         condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.account-manager.rule=Host(`account-manager.bestconfig.ir`)
+        - traefik.constraint-label=mytraefik
+        - traefik.http.routers.account-manager.entrypoints=http
+        - traefik.http.services.account-manager.loadbalancer.server.port=5000  
 
   mongodb:
     image: mongo:3.6.8
     volumes:
       - mongodb_data:/data/db
+    networks:
+      - mynet  
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
       placement:
         constraints: [node.role == manager]   
-      
-
     labels:
       - traefik.enable=false
 
@@ -82,11 +122,17 @@ services:
     image: dockersamples/visualizer:stable
     ports:
       - 8080
+    networks:
+      - mynet  
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     deploy:
       placement:
         constraints: [node.role == manager]
-    labels:
-      - traefik.http.routers.visualizer.rule=Host(`visualizer.bestconfig.ir`)
-      - traefik.port=8080
+      labels:
+        - traefik.http.routers.visualizer.rule=Host(`visualizer.bestconfig.ir`)
+        - traefik.enable=true
+        - traefik.constraint-label=mytraefik
+        - traefik.http.routers.visualizer.entrypoints=http
+        - traefik.http.services.visualizer.loadbalancer.server.port=8080 
+        
