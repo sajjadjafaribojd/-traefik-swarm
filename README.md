@@ -61,6 +61,11 @@ Run docker swarm stack command:
 ```bash
   docker stack deploy Auth docker-compose.yml
 ```
+Run dev environment:
+
+```bash
+  docker compose -f docker-compose_dev.yml up
+```
 
 
 ## Service Access Reference
