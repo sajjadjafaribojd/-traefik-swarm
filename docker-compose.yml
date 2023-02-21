@@ -4,7 +4,6 @@ networks:
   mynet:
     external: true
   
-
 volumes:
   mongodb_data: {}
 
@@ -56,7 +55,7 @@ services:
         - traefik.http.services.mytraefik.loadbalancer.server.port=80
         # Use the special Traefik service api@internal with the web UI/Dashboard
         - traefik.http.routers.mytraefik.service=api@internal     
-    
+  
   auth:
     build: ./auth
     #image: auth/node:1.5
@@ -99,9 +98,9 @@ services:
       labels:
         - traefik.enable=true
         - traefik.http.routers.account-manager.rule=Host(`account-manager.bestconfig.ir`)
-        - traefik.constraint-label=mytraefik
         - traefik.http.routers.account-manager.entrypoints=http
-        - traefik.http.services.account-manager.loadbalancer.server.port=5000  
+        - traefik.http.services.account-manager.loadbalancer.server.port=5000 
+        - traefik.port=5000 
 
   mongodb:
     image: mongo:3.6.8
