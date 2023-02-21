@@ -57,7 +57,6 @@ services:
         - traefik.http.routers.mytraefik.service=api@internal     
   
   auth:
-    build: ./auth
     #image: auth/node:1.5
     image: sajjadjfaribojd1/jabj:auth1.5
     env_file: auth/.env 
@@ -80,7 +79,6 @@ services:
         - traefik.port=2000
 
   account-manager:
-    build: ./account-manager
     #image: account-manager/node:1.5
     image: sajjadjfaribojd1/jabj:node1.5
     env_file: account-manager/.env
@@ -114,8 +112,8 @@ services:
         condition: on-failure
       placement:
         constraints: [node.role == manager]   
-    labels:
-      - traefik.enable=false
+      labels:
+        - traefik.enable=false
 
   visualizer:
     image: dockersamples/visualizer:stable
