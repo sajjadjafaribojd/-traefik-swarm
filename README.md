@@ -50,10 +50,16 @@ Go to the project directory
   cd -traefik-swarm.git
 ```
 
+Create overly network
+
+```bash
+  docker ceate network mynet -d overlay 
+```
+
 Run docker swarm stack command:
 
 ```bash
-  docker stack deploy Install Auth with docker command
+  docker stack deploy Auth docker-compose.yml
 ```
 
 
