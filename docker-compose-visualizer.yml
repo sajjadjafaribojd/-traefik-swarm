@@ -1,0 +1,205 @@
+version: "3"
+
+networks:
+  mynet:
+    external: true
+  
+volumes:
+  mongodb_data: {}
+  traefik-public-certificates:
+
+services:
+
+  mongodb:
+      image: mongo:3.6.8
+      volumes:
+        - mongodb_data:/data/db
+      networks:
+        - mynet  
+      deploy:
+        replicas: 1
+        restart_policy:
+          condition: on-failure
+        placement:
+          constraints: [node.role == manager]   
+        labels:
+          - traefik.enable=false
+
+  mytraefik:
+    image: "traefik:v2.2"
+    command:
+      # Enable Docker in Traefik, so that it reads labels from Docker services
+      - --providers.docker
+      # Do not expose all Docker services, only the ones explicitly exposed
+      - --providers.docker.exposedbydefault=false
+      # Enable Docker Swarm mode
+      - --providers.docker.swarmmode
+      # Create an entrypoint "http" listening on port 80
+      - --entrypoints.http.address=:80
+      # Create an entrypoint "https" listening on port 443
+      - --entrypoints.https.address=:443
+      # Enable the access log, with HTTP requests
+      - --accesslog
+      # Enable the Traefik log, for configurations and errors
+      - --log
+      # Enable the Dashboard and API
+      - --api
+      - --providers.docker.network=mynet
+      # Create the certificate resolver "letsencrypt" for Let's Encrypt, uses the environment variable EMAIL
+      - --certificatesresolvers.letsencrypt.acme.email=sajjadjfaribojd@gmail.com
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      # Only for development to avoid hitting the rate limit on certificates
+      - --certificatesresolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --log.level=DEBUG
+    ports:
+      - "80:80"
+      # Listen on port 443, default for HTTPS
+      - 443:443
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # Mount the volume to store the certificates
+      - ./traefik-public-certificates/:/certificates
+    networks:
+      - mynet  
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints: [node.role == manager]
+      labels:
+          # Enable Traefik for this service, to make it available in the public network
+          - traefik.enable=true
+          # Use the traefik-public network (declared below)
+          - traefik.docker.network=mynet
+          # admin-auth middleware with HTTP Basic auth
+          # Using the environment variables USERNAME and HASHED_PASSWORD
+          #- traefik.http.middlewares.admin-auth.basicauth.users=${USERNAME?Variable not set}:${HASHED_PASSWORD?Variable not set}
+          # https-redirect middleware to redirect HTTP to HTTPS
+          # It can be re-used by other stacks in other Docker Compose files
+          - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+          - traefik.http.middlewares.https-redirect.redirectscheme.permanent=true
+          # traefik-http set up only to use the middleware to redirect to https
+          # Uses the environment variable DOMAIN
+          - traefik.http.routers.traefik-public-http.rule=Host(`monitor.bestconfig.ir`)
+          - traefik.http.routers.traefik-public-http.entrypoints=http
+          - traefik.http.routers.traefik-public-http.middlewares=https-redirect
+          # traefik-https the actual router using HTTPS
+          # Uses the environment variable DOMAIN
+          - traefik.http.routers.traefik-public-https.rule=Host(`monitor.bestconfig.ir`)
+          - traefik.http.routers.traefik-public-https.entrypoints=https
+          - traefik.http.routers.traefik-public-https.tls=true
+          # Use the special Traefik service api@internal with the web UI/Dashboard
+          - traefik.http.routers.traefik-public-https.service=api@internal
+          # Use the "le" (Let's Encrypt) resolver created below
+          - traefik.http.routers.traefik-public-https.tls.certresolver=letsencrypt
+          # Enable HTTP Basic auth, using the middleware created above
+          #- traefik.http.routers.traefik-public-https.middlewares=admin-auth
+          # Define the port inside of the Docker service to use
+          - traefik.http.services.traefik-public.loadbalancer.server.port=443
+          - traefik.tls.stores.traefik-public.defaultcertificate.certfile=certificates/bestconfig.ir/fullchain.cert
+          - traefik.tls.stores.traefik-public.defaultcertificate.keyfile=certificates/bestconfig.ir/privkey.key
+
+
+  auth:
+    #image: auth/node:1.5
+    image: sajjadjfaribojd1/jabj:auth1.5
+    env_file: auth/.env 
+    networks:
+      - mynet
+    depends_on:
+      - mongodb
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.auth.rule=Host(`auth.bestconfig.ir`)
+        - traefik.http.routers.auth.entrypoints=http
+        - traefik.http.routers.auth-http.middlewares=https-redirect
+        - traefik.http.routers.auth-https.rule=Host(`auth.bestconfig.ir`)
+        - traefik.http.routers.auth-https.entrypoints=https
+        - traefik.http.routers.auth-https.tls=true
+        - traefik.http.routers.auth-https.tls.certresolver=letsencrypt
+        - traefik.http.services.auth.loadbalancer.server.port=2000 
+        - traefik.port=2000
+
+  account-manager:
+    #image: account-manager/node:1.5
+    image: sajjadjfaribojd1/jabj:node1.5
+    env_file: account-manager/.env
+    networks:
+      - mynet
+    depends_on:
+      - mongodb
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 2
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.account-manager.rule=Host(`account-manager.bestconfig.ir`)
+        - traefik.http.routers.account-manager.entrypoints=http
+        - traefik.http.routers.account-manager-http.middlewares=https-redirect
+        - traefik.http.routers.account-manager-https.rule=Host(`account-manager.bestconfig.ir`)
+        - traefik.http.routers.account-manager-https.entrypoints=https
+        - traefik.http.routers.account-manager-https.tls=true
+        - traefik.http.routers.account-manager-https.tls.certresolver=letsencrypt
+        - traefik.http.services.account-manager.loadbalancer.server.port=5000 
+        - traefik.port=5000 
+        - traefik.tls.stores.traefik-public.defaultcertificate.certfile=certificates/bestconfig.ir/fullchain.cert
+        - traefik.tls.stores.traefik-public.defaultcertificate.keyfile=certificates/bestconfig.ir/privkey.key
+
+  manager:
+    environment:
+      - VISUALIZER_TYPE=manager
+    image: yandeu/visualizer:dev
+    volumes:
+       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - mynet
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+      labels:
+        - visualizer.manager
+    healthcheck:
+      test: curl -f http://localhost:3500/healthcheck || exit 1
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      
+    ports:
+       - '9500:3500'
+
+  agent:
+    environment:
+      - VISUALIZER_TYPE=agent
+    image: yandeu/visualizer:dev
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - mynet
+    deploy:
+      mode: global
+      placement:
+        constraints: [node.platform.os == linux]
+      labels:
+        - visualizer.agent
+        - traefik.enable=false
+
+    healthcheck:
+      test: curl -f http://localhost:9501/healthcheck || exit 1
+      interval: 10s
+      timeout: 2s
+      retries: 3
+          
