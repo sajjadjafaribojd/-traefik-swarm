@@ -59,12 +59,12 @@ Create overly network
 Run docker swarm stack command:
 
 ```bash
-  docker stack deploy Auth docker-compose.yml
+  docker stack deploy Auth -c docker-compose.yml
 ```
 Run dev environment:
 
 ```bash
-  docker stack deploy Auth docker-compose_dev.yml
+  docker stack deploy Auth -c docker-compose_dev.yml
 ```
 Run docker compose single mode:
 
