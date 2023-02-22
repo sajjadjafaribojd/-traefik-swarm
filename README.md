@@ -59,12 +59,12 @@ Create overly network
 Run docker swarm stack command:
 
 ```bash
-  docker stack deploy Auth docker-compose.yml
+  docker stack deploy Auth -c docker-compose.yml
 ```
 Run dev environment:
 
 ```bash
-  docker stack deploy Auth docker-compose_dev.yml
+  docker stack deploy Auth -c docker-compose_dev.yml
 ```
 Run docker compose single mode:
 
@@ -95,3 +95,8 @@ Run docker compose single mode:
 ```http
    https://auth.domain.com/authentiq/v1/heartbeat
 ```
+## Screenshot
+
+![App Screenshot](https://github.com/sajjadjafaribojd/-traefik-swarm/blob/master/asset/traefik_dashboard.png)
+
+![App Screenshot](https://github.com/sajjadjafaribojd/-traefik-swarm/blob/master/asset/visualizer.png)
