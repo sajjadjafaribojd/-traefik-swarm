@@ -98,3 +98,5 @@ Run docker compose single mode:
 ## Screenshot
 
 ![App Screenshot](https://github.com/sajjadjafaribojd/-traefik-swarm/blob/master/asset/traefik_dashboard.png)
+
+![App Screenshot](https://github.com/sajjadjafaribojd/-traefik-swarm/blob/master/asset/visualizer.png)
