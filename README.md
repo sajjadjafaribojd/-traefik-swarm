@@ -95,3 +95,6 @@ Run docker compose single mode:
 ```http
    https://auth.domain.com/authentiq/v1/heartbeat
 ```
+## Screenshot
+
+![App Screenshot](https://github.com/sajjadjafaribojd/-traefik-swarm/blob/master/asset/traefik_dashboard.png)
