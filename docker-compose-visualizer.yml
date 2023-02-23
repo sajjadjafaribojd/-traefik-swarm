@@ -172,14 +172,24 @@ services:
         constraints: [node.role == manager]
       labels:
         - visualizer.manager
+        - traefik.http.routers.manager.rule=Host(`visualizer.bestconfig.ir`)
+        - traefik.enable=true
+        - traefik.constraint-label=mytraefik
+        - traefik.http.routers.manager.entrypoints=http
+        - traefik.http.routers.manager.middlewares=https-redirect
+        - traefik.http.routers.manager-https.rule=Host(`visualizer.bestconfig.ir`)
+        - traefik.http.routers.manager-https.entrypoints=https
+        - traefik.http.routers.manager-https.tls=true
+        - traefik.http.routers.manager-https.tls.certresolver=letsencrypt
+        - traefik.http.services.manager.loadbalancer.server.port=3500 
     healthcheck:
       test: curl -f http://localhost:3500/healthcheck || exit 1
       interval: 10s
       timeout: 2s
       retries: 3
       
-    ports:
-       - '9500:3500'
+    # ports:
+    #    - '9500:3500'
 
   agent:
     environment:
@@ -202,4 +212,5 @@ services:
       interval: 10s
       timeout: 2s
       retries: 3
+          
           
