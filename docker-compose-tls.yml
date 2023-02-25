@@ -30,6 +30,7 @@ services:
     command:
       # Enable Docker in Traefik, so that it reads labels from Docker services
       - --providers.docker
+      - --providers.file.filename=traefik_dynamic.yml
       # Do not expose all Docker services, only the ones explicitly exposed
       - --providers.docker.exposedbydefault=false
       # Enable Docker Swarm mode
@@ -47,7 +48,7 @@ services:
       - --providers.docker.network=mynet
       # Create the certificate resolver "letsencrypt" for Let's Encrypt, uses the environment variable EMAIL
       - --certificatesresolvers.letsencrypt.acme.email=sajjadjfaribojd@gmail.com
-      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.storage=/certificates/acme.json
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
       # Only for development to avoid hitting the rate limit on certificates
       - --certificatesresolvers.letsencrypt.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
@@ -60,6 +61,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       # Mount the volume to store the certificates
       - ./traefik-public-certificates/:/certificates
+      - "$PWD/traefik_dynamic.yml:/traefik_dynamic.yml"
     networks:
       - mynet  
     deploy:
@@ -98,8 +100,9 @@ services:
           #- traefik.http.routers.traefik-public-https.middlewares=admin-auth
           # Define the port inside of the Docker service to use
           - traefik.http.services.traefik-public.loadbalancer.server.port=443
-          - traefik.tls.stores.traefik-public.defaultcertificate.certfile=certificates/bestconfig.ir/fullchain.cert
-          - traefik.tls.stores.traefik-public.defaultcertificate.keyfile=certificates/bestconfig.ir/privkey.key
+          - traefik.http.services.traefik-public.loadbalancer.server.scheme=https
+          - traefik.tls.stores.traefik-public.defaultcertificate.certfile=certificates/bestconfig.ir/cert.pem
+          - traefik.tls.stores.traefik-public.defaultcertificate.keyfile=certificates/bestconfig.ir/cert.pem
 
 
   auth:
@@ -213,4 +216,4 @@ services:
       timeout: 2s
       retries: 3
           
-          
+        
