@@ -1,0 +1,5 @@
+tls:
+    certificates:
+      - certFile: /certificates/bestconfig.ir/cert.pem
+        keyFile: /certificates/bestconfig.ir/cert.pem
+      
